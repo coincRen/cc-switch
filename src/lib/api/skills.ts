@@ -34,6 +34,8 @@ export interface InstalledSkill {
   name: string;
   description?: string;
   directory: string;
+  repoSourceType?: string;
+  repoSourceHost?: string;
   repoOwner?: string;
   repoName?: string;
   repoBranch?: string;
@@ -64,6 +66,8 @@ export interface DiscoverableSkill {
   description: string;
   directory: string;
   readmeUrl?: string;
+  repoSourceType: string;
+  repoSourceHost: string;
   repoOwner: string;
   repoName: string;
   repoBranch: string;
@@ -107,6 +111,8 @@ export interface SkillUpdateInfo {
 
 /** 没有读到的仓库（发现、检查更新时逐仓库报告） */
 export interface SkillRepoFailure {
+  sourceType: string;
+  sourceHost: string;
   owner: string;
   name: string;
   branch: string;
@@ -177,10 +183,14 @@ export interface SkillsShSearchResult {
 
 /** 仓库配置 */
 export interface SkillRepo {
+  sourceType: string;
+  sourceHost: string;
   owner: string;
   name: string;
   branch: string;
   enabled: boolean;
+  /** GitLab Personal Access Token; write-only and omitted by the backend on reads. */
+  accessToken?: string;
 }
 
 // ========== API ==========
@@ -328,9 +338,19 @@ export const skillsApi = {
     return await invoke("add_skill_repo", { repo });
   },
 
+  /** 更新仓库启停状态；后端保留已保存的 GitLab Token */
+  async setRepoEnabled(repo: SkillRepo): Promise<boolean> {
+    return await invoke("set_skill_repo_enabled", { repo });
+  },
+
   /** 删除仓库 */
-  async removeRepo(owner: string, name: string): Promise<boolean> {
-    return await invoke("remove_skill_repo", { owner, name });
+  async removeRepo(repo: SkillRepo): Promise<boolean> {
+    return await invoke("remove_skill_repo", {
+      sourceType: repo.sourceType || "github",
+      sourceHost: repo.sourceHost || "github.com",
+      owner: repo.owner,
+      name: repo.name,
+    });
   },
 
   // ========== ZIP 安装 ==========
